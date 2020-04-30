@@ -1,33 +1,42 @@
-import {BoxGeometry, Mesh, MeshBasicMaterial, Object3D, Scene} from "three";
-
-const Materials = {
-    BLUE: new MeshBasicMaterial({ color: 0x0022cc }),
-    GREEN: new MeshBasicMaterial({ color: 0x00aa00 }),
-    ORANGE: new MeshBasicMaterial({ color: 0xee6600 }),
-    RED: new MeshBasicMaterial({ color: 0xaa1100 }),
-    WHITE: new MeshBasicMaterial({ color: 0xeeeeee }),
-    YELLOW: new MeshBasicMaterial({ color: 0xeedd00 }),
-}
-
-const randomMaterial = () => Object.values(Materials)[Math.floor(Math.random() * Object.values(Materials).length)];
+import {Scene} from "three";
+import {Cubelet} from "./Cubelet";
 
 export class MultiCube {
     private static CUBE_SIZE = 0.2;
     private static CUBE_SCALE = 0.9;
 
-    private readonly cubelets: Object3D[] = [];
+    private readonly cubelets: Cubelet[] = [];
     private readonly size: number;
+    private readonly layerSize: number;
 
     constructor(scene: Scene, size: number) {
         if (!Number.isInteger(size) || size < 1)
             throw new Error("Cube size must be integer.");
 
         this.size = size;
+        this.layerSize = size * size;
         this.addCubelets(scene);
     }
 
-    getLayerFromLeft(index: number): Object3D[] {
-        return this.cubelets.slice(index * 9, (index + 1) * 9);
+    getLayerFromLeft(index: number): Cubelet[] {
+        return this.cubelets.slice(index * this.layerSize, (index + 1) * this.layerSize);
+    }
+
+    getLayerFromBack(index: number): Cubelet[] {
+        const objects: Cubelet[] = [];
+        for (let i = 0; i < this.layerSize; ++i) {
+            objects.push(this.cubelets[index + this.size * i]);
+        }
+        return objects;
+    }
+
+    getLayerFromBottom(index: number): Cubelet[] {
+        const objects: Cubelet[] = [];
+        for (let i = 0; i < this.size; ++i) {
+            const start = index + i * this.layerSize;
+            objects.push(...this.cubelets.slice(start, start + this.size));
+        }
+        return objects;
     }
 
     private addCubelets(scene: Scene): void {
@@ -48,16 +57,7 @@ export class MultiCube {
 
     private addCubelet(x: number, y: number, z: number): void {
         const vertexLength = MultiCube.CUBE_SIZE * MultiCube.CUBE_SCALE;
-        const geometry =new BoxGeometry(vertexLength, vertexLength, vertexLength, 0,0,0);
-        const materials = [
-            randomMaterial(),
-            randomMaterial(),
-            randomMaterial(),
-            randomMaterial(),
-            randomMaterial(),
-            randomMaterial(),
-        ]
-        const mesh = new Mesh(geometry, materials);
+        const mesh = new Cubelet(vertexLength);
         mesh.position.set(x, y, z);
         this.cubelets.push(mesh);
     }
